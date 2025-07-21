@@ -69,7 +69,7 @@ print(response.json())
 
 ```javascript
 const formData = new FormData();
-formData.append("file", yourFile);  // yourFile = File object from input
+formData.append("file", yourFile);
 formData.append("password", "");
 formData.append("min_months", "3");
 formData.append("exclude_below", "50000");
