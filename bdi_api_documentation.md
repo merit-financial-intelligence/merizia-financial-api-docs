@@ -24,7 +24,7 @@ You will receive your **unique API token** from Merizia during onboarding.
 
 ---
 
-## ✅ **Request Details**
+## **Request Details**
 
 | Method       | POST                  |
 | ------------ | --------------------- |
