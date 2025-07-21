@@ -138,4 +138,4 @@ For API access, token setup, or support:
 
 ### Notes:
 
-* 🔐 Data processed securely; no data stored after processing.
+* Data processed securely; no data stored after processing.
