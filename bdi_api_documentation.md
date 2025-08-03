@@ -7,7 +7,7 @@ Welcome to the **Merizia Financial Statement API**. This API allows you to extra
 ## **Base URL**
 
 ```
-POST https://merizia-bdi.up.railway.app/analyze-statement/
+POST https://merizia-bdi.up.railway.app/
 ```
 
 ---
@@ -48,7 +48,7 @@ You will receive your **unique API token** from Merizia during onboarding.
 ```python
 import requests
 
-url = "https://your-api-name.onrender.com/analyze-statement/"
+url = "https://merizia-bdi.up.railway.app/analyze-statement/"
 headers = {"Authorization": "Bearer YOUR_CLIENT_TOKEN"}
 
 files = {"file": open("statement.pdf", "rb")}
@@ -74,7 +74,7 @@ formData.append("password", "");
 formData.append("min_months", "3");
 formData.append("exclude_below", "50000");
 
-fetch("https://your-api-name.onrender.com/analyze-statement/", {
+fetch("https://merizia-bdi.up.railway.app/analyze-statement/", {
     method: "POST",
     headers: {
         "Authorization": "Bearer YOUR_CLIENT_TOKEN"
