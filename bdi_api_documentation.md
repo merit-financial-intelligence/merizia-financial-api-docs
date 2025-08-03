@@ -106,19 +106,19 @@ import requests
 from pprint import pprint
 
 API_TOKEN = "YOUR_CLIENT_TOKEN"
-BASE_URL = "https://merizia-bdi.up.railway.app"
-HEADERS = {"Authorization": f"Bearer {API_TOKEN}"}
+BASE_URL   = "https://merizia-bdi.up.railway.app"
+HEADERS    = {"Authorization": f"Bearer {API_TOKEN}"}
 
 # Path to your PDF file and its password
 file_path = "/path/to/statement.pdf"
-password = "your_password_here"
+password  = "your_password_here"
 
 # Enqueue the statement
 with open(file_path, "rb") as f:
     files = {"file": f}
     data = {
-        "password": password,
-        "min_months": 3,
+        "password":      password,
+        "min_months":    3,
         "exclude_below": 50000
     }
     resp = requests.post(
@@ -140,36 +140,8 @@ while True:
         break
     time.sleep(5)
 
-print(insights)
-```python
-import time
-import requests
-
-API_TOKEN = "YOUR_CLIENT_TOKEN"
-BASE_URL = "https://merizia-bdi.up.railway.app"
-HEADERS = {"Authorization": f"Bearer {API_TOKEN}"}
-
-# Enqueue a single statement
-with open("statement.pdf", "rb") as f:
-    files = {"file": f}
-    data = {"password": "", "min_months": 3, "exclude_below": 50000}
-    resp = requests.post(
-        f"{BASE_URL}/enqueue-statement/", headers=HEADERS, files=files, data=data
-    )
-    resp.raise_for_status()
-    job_id = resp.json()["job_id"]
-
-# Poll until done
-while True:
-    resp = requests.get(f"{BASE_URL}/jobs/{job_id}", headers=HEADERS)
-    resp.raise_for_status()
-    status = resp.json()["status"]
-    if status == "done":
-        insights = resp.json()["result"]
-        break
-    time.sleep(5)
-
 pprint(insights)
+
 ```
 
 ### JavaScript (Fetch API) — Single Statement
