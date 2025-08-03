@@ -103,6 +103,47 @@ Auth: Bearer Token
 ```python
 import time
 import requests
+from pprint import pprint
+
+API_TOKEN = "YOUR_CLIENT_TOKEN"
+BASE_URL = "https://merizia-bdi.up.railway.app"
+HEADERS = {"Authorization": f"Bearer {API_TOKEN}"}
+
+# Path to your PDF file and its password
+file_path = "/path/to/statement.pdf"
+password = "your_password_here"
+
+# Enqueue the statement
+with open(file_path, "rb") as f:
+    files = {"file": f}
+    data = {
+        "password": password,
+        "min_months": 3,
+        "exclude_below": 50000
+    }
+    resp = requests.post(
+        f"{BASE_URL}/enqueue-statement/",
+        headers=HEADERS,
+        files=files,
+        data=data
+    )
+    resp.raise_for_status()
+    job_id = resp.json()["job_id"]
+
+# Poll until done
+while True:
+    resp = requests.get(f"{BASE_URL}/jobs/{job_id}", headers=HEADERS)
+    resp.raise_for_status()
+    status = resp.json()["status"]
+    if status == "done":
+        insights = resp.json()["result"]
+        break
+    time.sleep(5)
+
+print(insights)
+```python
+import time
+import requests
 
 API_TOKEN = "YOUR_CLIENT_TOKEN"
 BASE_URL = "https://merizia-bdi.up.railway.app"
@@ -128,7 +169,7 @@ while True:
         break
     time.sleep(5)
 
-print(insights)
+pprint(insights)
 ```
 
 ### JavaScript (Fetch API) — Single Statement
@@ -164,57 +205,6 @@ do {
 console.log('Insights:', payload.result);
 ```
 
-### Python — Batch Processing Multiple Statements
-
-```python
-import time
-import requests
-from pprint import pprint
-
-API_TOKEN = "YOUR_CLIENT_TOKEN"
-BASE_URL = "https://merizia-bdi.up.railway.app"
-HEADERS = {"Authorization": f"Bearer {API_TOKEN}"}
-
-# List of (file_path, password) tuples
-FILES_AND_PW = [
-    ("/path/to/stmt1.pdf", "pw1"),
-    ("/path/to/stmt2.pdf", ""),
-    ("/path/to/stmt3.pdf", "secret")
-]
-
-
-def process_statement(file_path, password, min_months=3, exclude_below=50000):
-    # Enqueue
-    with open(file_path, "rb") as f:
-        files = {"file": f}
-        data = {"password": password, "min_months": min_months, "exclude_below": exclude_below}
-        resp = requests.post(f"{BASE_URL}/enqueue-statement/", headers=HEADERS, files=files, data=data)
-        resp.raise_for_status()
-        job_id = resp.json()["job_id"]
-
-    # Poll until done
-    while True:
-        resp = requests.get(f"{BASE_URL}/jobs/{job_id}", headers=HEADERS)
-        resp.raise_for_status()
-        payload = resp.json()
-        if payload["status"] == "done":
-            return payload["result"]
-        if payload["status"] == "error":
-            raise RuntimeError(payload.get("error"))
-        time.sleep(5)
-
-
-if __name__ == "__main__":
-    all_results = {}
-    for path, pw in FILES_AND_PW:
-        print(f"Processing {path} …", end=" ")
-        insights = process_statement(path, pw)
-        print("done.")
-        all_results[path] = insights
-
-    pprint(all_results)
-```
-
 ---
 
 ## **Error Codes**
@@ -224,9 +214,10 @@ if __name__ == "__main__":
 | `400`       | Invalid document or parameters                         |
 | `401`       | Unauthorized or missing token                          |
 | `404`       | Job ID not found                                       |
-| `500`       | Internal server error — contact Merizia support         |
+| `500`       | Internal server error — contact Merizia support        |
 
 ---
+
 
 ## **Support**
 
