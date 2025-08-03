@@ -98,7 +98,7 @@ Auth: Bearer Token
 
 ## **Examples**
 
-### Python (requests)
+### Python (requests) — Single Statement
 
 ```python
 import time
@@ -108,7 +108,7 @@ API_TOKEN = "YOUR_CLIENT_TOKEN"
 BASE_URL = "https://merizia-bdi.up.railway.app"
 HEADERS = {"Authorization": f"Bearer {API_TOKEN}"}
 
-# 1) Enqueue
+# Enqueue a single statement
 with open("statement.pdf", "rb") as f:
     files = {"file": f}
     data = {"password": "", "min_months": 3, "exclude_below": 50000}
@@ -117,38 +117,27 @@ with open("statement.pdf", "rb") as f:
     )
     resp.raise_for_status()
     job_id = resp.json()["job_id"]
-    print(f"Job queued: {job_id}")
 
-# 2) Poll for results
-interval = 5  # seconds
-timeout = 300  # seconds
-elapsed = 0
-while elapsed < timeout:
+# Poll until done
+while True:
     resp = requests.get(f"{BASE_URL}/jobs/{job_id}", headers=HEADERS)
     resp.raise_for_status()
-    payload = resp.json()
-    status = payload.get("status")
-    if status == "queued":
-        print(f"Still queued...({elapsed}s)")
-        time.sleep(interval)
-        elapsed += interval
-    elif status == "done":
-        insights = payload["result"]
-        print("Insights:")
-        from pprint import pprint; pprint(insights)
+    status = resp.json()["status"]
+    if status == "done":
+        insights = resp.json()["result"]
         break
-    else:
-        print(f"Error: {payload.get('error')}")
-        break
+    time.sleep(5)
+
+print(insights)
 ```
 
-### JavaScript (Fetch API)
+### JavaScript (Fetch API) — Single Statement
 
 ```javascript
 const API_TOKEN = "YOUR_CLIENT_TOKEN";
 const BASE_URL = "https://merizia-bdi.up.railway.app";
 
-// 1) Enqueue
+// Enqueue
 const form = new FormData();
 form.append("file", yourFile);
 form.append("password", "");
@@ -161,23 +150,69 @@ const enqueueResp = await fetch(`${BASE_URL}/enqueue-statement/`, {
   body: form
 });
 const { job_id } = await enqueueResp.json();
-console.log('Job queued:', job_id);
 
-// 2) Poll for results
-let status;
+// Poll until done
+let payload;
 do {
   await new Promise(r => setTimeout(r, 5000));
   const statusResp = await fetch(`${BASE_URL}/jobs/${job_id}`, {
     headers: { 'Authorization': `Bearer ${API_TOKEN}` }
   });
-  const payload = await statusResp.json();
-  status = payload.status;
-  console.log('Status:', status);
-  if (status === 'done') {
-    console.log('Result:', payload.result);
-    break;
-  }
-} while (status === 'queued');
+  payload = await statusResp.json();
+} while (payload.status === 'queued');
+
+console.log('Insights:', payload.result);
+```
+
+### Python — Batch Processing Multiple Statements
+
+```python
+import time
+import requests
+from pprint import pprint
+
+API_TOKEN = "YOUR_CLIENT_TOKEN"
+BASE_URL = "https://merizia-bdi.up.railway.app"
+HEADERS = {"Authorization": f"Bearer {API_TOKEN}"}
+
+# List of (file_path, password) tuples
+FILES_AND_PW = [
+    ("/path/to/stmt1.pdf", "pw1"),
+    ("/path/to/stmt2.pdf", ""),
+    ("/path/to/stmt3.pdf", "secret")
+]
+
+
+def process_statement(file_path, password, min_months=3, exclude_below=50000):
+    # Enqueue
+    with open(file_path, "rb") as f:
+        files = {"file": f}
+        data = {"password": password, "min_months": min_months, "exclude_below": exclude_below}
+        resp = requests.post(f"{BASE_URL}/enqueue-statement/", headers=HEADERS, files=files, data=data)
+        resp.raise_for_status()
+        job_id = resp.json()["job_id"]
+
+    # Poll until done
+    while True:
+        resp = requests.get(f"{BASE_URL}/jobs/{job_id}", headers=HEADERS)
+        resp.raise_for_status()
+        payload = resp.json()
+        if payload["status"] == "done":
+            return payload["result"]
+        if payload["status"] == "error":
+            raise RuntimeError(payload.get("error"))
+        time.sleep(5)
+
+
+if __name__ == "__main__":
+    all_results = {}
+    for path, pw in FILES_AND_PW:
+        print(f"Processing {path} …", end=" ")
+        insights = process_statement(path, pw)
+        print("done.")
+        all_results[path] = insights
+
+    pprint(all_results)
 ```
 
 ---
@@ -193,18 +228,6 @@ do {
 
 ---
 
-## **Health Check**
-
-Railway pings:
-
-```
-GET /health
-```
-
-returns `{ "status": "ok" }` immediately.
-
----
-
 ## **Support**
 
 For API access, token setup, or troubleshooting:
@@ -213,4 +236,4 @@ For API access, token setup, or troubleshooting:
 
 ---
 
-> **Note:** Jobs are persisted in Redis. If you redeploy or run multiple workers, all will share the same job state.
+> **Note:** Jobs are persisted in Redis so they survive restarts and multiple workers. If you redeploy or scale, all processes share the same job state.
