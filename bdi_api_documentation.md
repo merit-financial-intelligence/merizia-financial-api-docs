@@ -7,7 +7,7 @@ Welcome to the **Merizia Financial Statement API**. This API allows you to extra
 ## **Base URL**
 
 ```
-POST https://merizia-financial-api.onrender.com/analyze-statement/
+POST https://merizia-bdi.up.railway.app/analyze-statement/
 ```
 
 ---
